@@ -4,30 +4,51 @@ import java.util.*;
 
 public class ListGraph<V, W> implements CustomGraph<V, W> {
 
-    private Map<V, Vertex<V>> vertices = new HashMap<>();
+    private Map<V, Vertex<V,W>> vertices = new HashMap<>();
     private Set<Edge<V, W>> edges = new HashSet<>();
 
 
     @Override
     public void addVertex(V v) {
         if (vertices.containsKey(v)) return;
-        vertices.put(v, new Vertex<V>(v));
+        vertices.put(v, new Vertex(v));
     }
 
     @Override
     public void removeVertex(V v) {
 
+        Vertex vertex = vertices.get(v);
+        if (vertex == null) return;
+
+        Iterator<Edge> fromIterator = vertex.fromEdges.iterator();
+        for (;fromIterator.hasNext();) {
+            Edge<V,W> edge = fromIterator.next();
+            fromIterator.remove();
+            edge.to.toEdges.remove(edge);
+            edges.remove(edge);
+        }
+
+        Iterator<Edge> toIterator = vertex.toEdges.iterator();
+        for (;toIterator.hasNext();) {
+            Edge<V,W> edge = toIterator.next();
+            edge.from.toEdges.remove(edge);
+            toIterator.remove();
+            edges.remove(edge);
+
+        }
+
+
     }
 
     @Override
     public void addEdge(V from, V to, W w) {
-        Vertex<V> fromVertex = vertices.get(from);
+        Vertex<V,W> fromVertex = vertices.get(from);
         if (fromVertex == null) {
             fromVertex = new Vertex<>(from);
             vertices.put(from, fromVertex);
         }
 
-        Vertex<V> toVertex = vertices.get(to);
+        Vertex<V,W> toVertex = vertices.get(to);
         if (toVertex == null) {
             toVertex = new Vertex<>(to);
             vertices.put(to, toVertex);
@@ -51,30 +72,36 @@ public class ListGraph<V, W> implements CustomGraph<V, W> {
 
     @Override
     public void removeEdge(V from, V to) {
-        Vertex<V> fromVertex = vertices.get(from);
-        Vertex<V> toVertex = vertices.get(to);
+        Vertex<V,W> fromVertex = vertices.get(from);
+        Vertex<V,W> toVertex = vertices.get(to);
 
         if (fromVertex == null || toVertex == null) return;
 
-        Edge<V,W> edge = new Edge<>()
-        fromVertex.fromEdges
+        Edge<V,W> edge = new Edge(fromVertex,toVertex,1);
+
+        if (!edges.contains(edge)) {return;}
+
+        edges.remove(edge);
+        fromVertex.fromEdges.remove(edge);
+        toVertex.toEdges.remove(edge);
+
 
     }
 
     @Override
     public int edgeSize() {
-        return 0;
+        return edges.size();
     }
 
     @Override
     public int vertexSize() {
-        return 0;
+        return vertices.size();
     }
 
-    private static class Vertex<V> {
+    private static class Vertex<V,W> {
         V value;
-        Set<Edge> fromEdges = new HashSet<>();
-        Set<Edge> toEdges = new HashSet<>();
+        Set<Edge<V,W>> fromEdges = new HashSet<>();
+        Set<Edge<V,W>> toEdges = new HashSet<>();
 
         public Vertex(V v) {
             this.value = v;
@@ -84,7 +111,7 @@ public class ListGraph<V, W> implements CustomGraph<V, W> {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Vertex<?> vertex = (Vertex<?>) o;
+            Vertex<V,W> vertex = (Vertex<V,W>) o;
             return Objects.equals(value, vertex.value);
         }
 
@@ -95,12 +122,12 @@ public class ListGraph<V, W> implements CustomGraph<V, W> {
     }
 
     private static class Edge<V,W> {
-        private Vertex<V> from;
-        private Vertex<V> to;
+        private Vertex<V,W> from;
+        private Vertex<V,W> to;
         private W weight;
 
 
-        public Edge(Vertex<V> from, Vertex<V> to ,W weight) {
+        public Edge(Vertex<V,W> from, Vertex<V,W> to ,W weight) {
             this.from = from;
             this.to = to;
             this.weight = weight;
